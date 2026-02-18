@@ -79,6 +79,7 @@ export async function createIdea(formData: FormData) {
   const title = formData.get("title") as string
   const description = formData.get("description") as string
   const url = formData.get("url") as string
+  const imageUrl = formData.get("imageUrl") as string
 
   if (!title.trim()) {
     return { error: "タイトルを入力してください" }
@@ -90,6 +91,7 @@ export async function createIdea(formData: FormData) {
     title: title.trim(),
     description: description?.trim() || null,
     url: url?.trim() || null,
+    image_url: imageUrl?.trim() || null,
   })
 
   if (error) {
@@ -100,10 +102,75 @@ export async function createIdea(formData: FormData) {
   return { success: true }
 }
 
+export async function updateIdea(
+  ideaId: string,
+  sessionId: string,
+  data: { title: string; description: string; url: string; imageUrl: string | null }
+) {
+  await assertAdmin()
+
+  if (!data.title.trim()) {
+    return { error: "タイトルを入力してください" }
+  }
+
+  const supabase = createClient()
+
+  // If image was removed or replaced, delete old image from storage
+  const { data: existing } = await supabase
+    .from("ideas")
+    .select("image_url")
+    .eq("id", ideaId)
+    .single()
+
+  if (existing?.image_url && existing.image_url !== data.imageUrl) {
+    const bucketUrl = "/storage/v1/object/public/idea-images/"
+    const idx = existing.image_url.indexOf(bucketUrl)
+    if (idx !== -1) {
+      const path = existing.image_url.substring(idx + bucketUrl.length)
+      await supabase.storage.from("idea-images").remove([path])
+    }
+  }
+
+  const { error } = await supabase
+    .from("ideas")
+    .update({
+      title: data.title.trim(),
+      description: data.description?.trim() || null,
+      url: data.url?.trim() || null,
+      image_url: data.imageUrl || null,
+    })
+    .eq("id", ideaId)
+
+  if (error) {
+    return { error: "更新に失敗しました: " + error.message }
+  }
+
+  revalidatePath(`/admin/sessions/${sessionId}`)
+  return { success: true }
+}
+
 export async function deleteIdea(ideaId: string, sessionId: string) {
   await assertAdmin()
 
   const supabase = createClient()
+
+  // Get idea to check for image
+  const { data: idea } = await supabase
+    .from("ideas")
+    .select("image_url")
+    .eq("id", ideaId)
+    .single()
+
+  // Delete image from storage if exists
+  if (idea?.image_url) {
+    const bucketUrl = "/storage/v1/object/public/idea-images/"
+    const idx = idea.image_url.indexOf(bucketUrl)
+    if (idx !== -1) {
+      const path = idea.image_url.substring(idx + bucketUrl.length)
+      await supabase.storage.from("idea-images").remove([path])
+    }
+  }
+
   const { error } = await supabase.from("ideas").delete().eq("id", ideaId)
 
   if (error) {

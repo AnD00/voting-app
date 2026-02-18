@@ -18,6 +18,7 @@ interface Idea {
   title: string
   description: string | null
   url: string | null
+  image_url: string | null
 }
 
 type Step = "check" | "nickname" | "vote" | "complete"
@@ -239,33 +240,42 @@ function VoteStep({
               }`}
               onClick={() => setSelectedIdea(idea.id === selectedIdea ? null : idea.id)}
             >
-              <CardContent className="py-4 flex items-center gap-3">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-200 ${
-                    selectedIdea === idea.id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  <Vote className="h-5 w-5" />
-                </div>
-                <div className="flex-1 text-left min-w-0">
-                  <p className="font-medium text-foreground">{idea.title}</p>
-                  {idea.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{idea.description}</p>
+              <CardContent className="py-4 flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-200 ${
+                      selectedIdea === idea.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <Vote className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="font-medium text-foreground">{idea.title}</p>
+                    {idea.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{idea.description}</p>
+                    )}
+                  </div>
+                  {idea.url && (
+                    <a
+                      href={idea.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shrink-0 shadow-sm"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      デモを体験
+                    </a>
                   )}
                 </div>
-                {idea.url && (
-                  <a
-                    href={idea.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shrink-0 shadow-sm"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    デモを体験
-                  </a>
+                {idea.image_url && (
+                  <img
+                    src={idea.image_url}
+                    alt={idea.title}
+                    className="w-full rounded-lg border border-border/30 object-contain max-h-48"
+                  />
                 )}
               </CardContent>
             </Card>

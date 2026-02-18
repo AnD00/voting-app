@@ -17,6 +17,7 @@ interface RankedIdea {
   title: string
   description: string | null
   url: string | null
+  image_url: string | null
   voteCount: number
 }
 
@@ -144,6 +145,13 @@ export function ResultsView({
                       {winner.description && (
                         <p className="text-sm text-muted-foreground mt-1">{winner.description}</p>
                       )}
+                      {winner.image_url && (
+                        <img
+                          src={winner.image_url}
+                          alt={winner.title}
+                          className="w-full max-h-56 rounded-lg border border-border/30 object-contain mt-3"
+                        />
+                      )}
                       <p className="text-lg font-semibold text-primary mt-2">
                         {winner.voteCount} 票
                       </p>
@@ -199,6 +207,13 @@ export function ResultsView({
                       <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground shrink-0">
                         {otherRanks[index]}
                       </div>
+                      {idea.image_url && (
+                        <img
+                          src={idea.image_url}
+                          alt={idea.title}
+                          className="w-12 h-12 rounded-md object-cover shrink-0 border border-border/30"
+                        />
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground text-sm truncate">
                           {idea.title}

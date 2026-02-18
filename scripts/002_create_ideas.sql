@@ -3,6 +3,7 @@ CREATE TABLE public.ideas (
   session_id uuid NOT NULL,
   title text NOT NULL,
   description text,
+  image_url text,
   url text,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT ideas_pkey PRIMARY KEY (id),
