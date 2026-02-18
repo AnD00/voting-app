@@ -12,7 +12,7 @@ export async function getSessionWithIdeas(sessionId: string) {
     .single()
 
   if (sessionError || !session) {
-    return { error: "投票会が見つかりません" }
+    return { error: "投票が見つかりません" }
   }
 
   const { data: ideas } = await supabase
@@ -48,7 +48,7 @@ export async function submitVote(
     .single()
 
   if (!session || session.is_closed) {
-    return { error: "この投票会は締め切られています" }
+    return { error: "この投票は締め切られています" }
   }
 
   // Check if voter already voted

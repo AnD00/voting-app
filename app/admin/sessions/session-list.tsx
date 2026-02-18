@@ -19,7 +19,7 @@ export function SessionList({ sessions }: { sessions: Session[] }) {
   if (sessions.length === 0) {
     return (
       <p className="text-muted-foreground text-center py-8">
-        まだ投票会がありません。上のフォームから作成しましょう。
+        まだ投票がありません。上のフォームから作成しましょう。
       </p>
     )
   }

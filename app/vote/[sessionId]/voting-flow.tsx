@@ -16,6 +16,7 @@ interface Session {
 interface Idea {
   id: string
   title: string
+  description: string | null
   url: string | null
 }
 
@@ -178,7 +179,7 @@ function NicknameStep({
           maxLength={20}
           autoFocus
           onKeyDown={(e) => {
-            if (e.key === "Enter" && nickname.trim()) {
+            if (e.key === "Enter" && !e.nativeEvent.isComposing && nickname.trim()) {
               onNext()
             }
           }}
@@ -219,24 +220,24 @@ function VoteStep({
       <div className="text-center mb-2 animate-slide-up">
         <p className="text-muted-foreground">
           <span className="font-medium text-foreground">{nickname}</span>さん、
-          気になるアイデアを1つ選んでください
+          最も気に入ったアイデアを1つ選んでください
         </p>
       </div>
 
       <div className="flex flex-col gap-3">
         {ideas.map((idea, index) => (
-          <button
+          <div
             key={idea.id}
-            onClick={() => setSelectedIdea(idea.id === selectedIdea ? null : idea.id)}
             className="animate-slide-up"
             style={{ animationDelay: `${index * 80}ms`, animationFillMode: "backwards" }}
           >
             <Card
-              className={`transition-all duration-200 cursor-pointer ${
+              className={`h-full transition-all duration-200 cursor-pointer ${
                 selectedIdea === idea.id
                   ? "ring-2 ring-primary shadow-lg scale-[1.02]"
                   : "hover:shadow-md hover:scale-[1.01]"
               }`}
+              onClick={() => setSelectedIdea(idea.id === selectedIdea ? null : idea.id)}
             >
               <CardContent className="py-4 flex items-center gap-3">
                 <div
@@ -250,31 +251,25 @@ function VoteStep({
                 </div>
                 <div className="flex-1 text-left min-w-0">
                   <p className="font-medium text-foreground">{idea.title}</p>
-                  {idea.url && (
-                    <a
-                      href={idea.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline flex items-center gap-1 mt-0.5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      詳しく見る
-                    </a>
+                  {idea.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{idea.description}</p>
                   )}
                 </div>
-                {selectedIdea === idea.id && (
-                  <div className="animate-bounce-in shrink-0">
-                    <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                      <svg className="h-4 w-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  </div>
+                {idea.url && (
+                  <a
+                    href={idea.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shrink-0 shadow-sm"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    デモを体験
+                  </a>
                 )}
               </CardContent>
             </Card>
-          </button>
+          </div>
         ))}
       </div>
 
@@ -285,11 +280,11 @@ function VoteStep({
       <div className="sticky bottom-0 bg-background/80 backdrop-blur-sm py-4 -mx-4 px-4 border-t mt-2">
         <Button
           size="lg"
-          className="w-full text-base animate-pulse-glow"
+          className={`w-full text-base ${selectedIdea ? "animate-pulse-glow" : ""}`}
           disabled={!selectedIdea || isSubmitting}
           onClick={onSubmit}
         >
-          {isSubmitting ? "投票中..." : "この案に投票する!"}
+          {isSubmitting ? "投票中..." : "このアイデアに投票する!"}
         </Button>
       </div>
     </div>

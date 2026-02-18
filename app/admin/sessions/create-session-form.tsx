@@ -47,7 +47,7 @@ export function CreateSessionForm() {
           )}
           <Button type="submit" disabled={isPending}>
             <Plus className="h-4 w-4 mr-1" />
-            {isPending ? "作成中..." : "投票会を作成"}
+            {isPending ? "作成中..." : "投票を作成"}
           </Button>
         </form>
       </CardContent>

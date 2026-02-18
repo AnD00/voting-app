@@ -21,11 +21,11 @@ export default async function AdminSessionsPage() {
       <AdminHeader />
       <main className="max-w-2xl mx-auto p-4 flex flex-col gap-6">
         <div>
-          <h2 className="text-xl font-bold text-foreground mb-4">新しい投票会を作成</h2>
+          <h2 className="text-xl font-bold text-foreground mb-4">新しい投票を作成</h2>
           <CreateSessionForm />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground mb-4">投票会一覧</h2>
+          <h2 className="text-xl font-bold text-foreground mb-4">投票一覧</h2>
           <SessionList sessions={sessions ?? []} />
         </div>
       </main>

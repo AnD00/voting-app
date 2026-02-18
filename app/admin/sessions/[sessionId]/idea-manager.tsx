@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
 import { Plus, Trash2, ExternalLink, Vote } from "lucide-react"
 
 interface Idea {
   id: string
   title: string
+  description: string | null
   url: string | null
   created_at: string
   votes: { count: number }[]
@@ -54,6 +56,15 @@ export function IdeaManager({
                 name="title"
                 placeholder="アイデアのタイトル"
                 required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="idea-description">説明（任意）</Label>
+              <Textarea
+                id="idea-description"
+                name="description"
+                placeholder="アイデアの簡単な説明"
+                rows={2}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -115,6 +126,9 @@ function IdeaRow({
     <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
       <div className="flex-1 min-w-0">
         <p className="font-medium text-foreground truncate">{idea.title}</p>
+        {idea.description && (
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{idea.description}</p>
+        )}
         {idea.url && (
           <a
             href={idea.url}

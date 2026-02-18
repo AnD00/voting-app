@@ -42,7 +42,7 @@ export default async function VotePage({
 
   const { data: ideas } = await supabase
     .from("ideas")
-    .select("id, title, url")
+    .select("id, title, description, url")
     .eq("session_id", sessionId)
 
   const { count: totalVotes } = await supabase

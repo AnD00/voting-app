@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import confetti from "canvas-confetti"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ interface Session {
 interface RankedIdea {
   id: string
   title: string
+  description: string | null
   url: string | null
   voteCount: number
 }
@@ -32,8 +33,26 @@ export function ResultsView({
   const [revealed, setRevealed] = useState(false)
   const confettiFired = useRef(false)
 
-  const winner = ideas[0]
-  const others = ideas.slice(1)
+  // Compute ranks with ties (e.g., 1, 2, 2, 4)
+  const ranks = useMemo(() => {
+    const result: number[] = []
+    for (let i = 0; i < ideas.length; i++) {
+      if (i === 0) {
+        result.push(1)
+      } else if (ideas[i].voteCount === ideas[i - 1].voteCount) {
+        result.push(result[i - 1])
+      } else {
+        result.push(i + 1)
+      }
+    }
+    return result
+  }, [ideas])
+
+  // Find all ideas tied for 1st place
+  const winnerCount = ranks.filter((r) => r === 1).length
+  const winners = ideas.slice(0, winnerCount)
+  const others = ideas.slice(winnerCount)
+  const otherRanks = ranks.slice(winnerCount)
 
   useEffect(() => {
     // Reveal animation after a short delay
@@ -42,7 +61,7 @@ export function ResultsView({
   }, [])
 
   useEffect(() => {
-    if (revealed && !confettiFired.current && winner) {
+    if (revealed && !confettiFired.current && winners.length > 0) {
       confettiFired.current = true
       // Fire confetti
       const duration = 3000
@@ -70,9 +89,9 @@ export function ResultsView({
       }
       frame()
     }
-  }, [revealed, winner])
+  }, [revealed, winners])
 
-  if (!winner) {
+  if (winners.length === 0) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-background p-4">
         <div className="text-center">
@@ -106,38 +125,45 @@ export function ResultsView({
             </div>
           </div>
 
-          <Card className="border-2 border-primary/30 shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-br from-primary/5 to-accent/5 p-6">
-              <div className="flex flex-col items-center gap-4">
-                <div className="animate-bounce-in">
-                  <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Trophy className="h-10 w-10 text-primary" />
+          <div className="flex flex-col gap-4">
+            {winners.map((winner) => (
+              <Card key={winner.id} className="border-2 border-primary/30 shadow-xl overflow-hidden">
+                <div className="bg-gradient-to-br from-primary/5 to-accent/5 p-6">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="animate-bounce-in">
+                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Trophy className="h-10 w-10 text-primary" />
+                      </div>
+                    </div>
+
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-primary mb-1">優勝</p>
+                      <h2 className="text-2xl font-bold text-foreground text-balance">
+                        {winner.title}
+                      </h2>
+                      {winner.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{winner.description}</p>
+                      )}
+                      <p className="text-lg font-semibold text-primary mt-2">
+                        {winner.voteCount} 票
+                      </p>
+                      {winner.url && (
+                        <a
+                          href={winner.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          詳しく見る
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                <div className="text-center">
-                  <p className="text-sm font-medium text-primary mb-1">優勝</p>
-                  <h2 className="text-2xl font-bold text-foreground text-balance">
-                    {winner.title}
-                  </h2>
-                  <p className="text-lg font-semibold text-primary mt-2">
-                    {winner.voteCount} 票
-                  </p>
-                  {winner.url && (
-                    <a
-                      href={winner.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      詳しく見る
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
+              </Card>
+            ))}
+          </div>
         </div>
 
         {/* Other Rankings */}
@@ -171,12 +197,15 @@ export function ResultsView({
                   >
                     <CardContent className="py-3 flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground shrink-0">
-                        {index + 2}
+                        {otherRanks[index]}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground text-sm truncate">
                           {idea.title}
                         </p>
+                        {idea.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">{idea.description}</p>
+                        )}
                         {idea.url && (
                           <a
                             href={idea.url}

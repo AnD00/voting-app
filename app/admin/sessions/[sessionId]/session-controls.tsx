@@ -107,7 +107,7 @@ export function SessionControls({
             size="sm"
             disabled={isDeleting}
             onClick={async () => {
-              if (!confirm("この投票会を削除しますか？すべてのアイデアと投票データが失われます。")) return
+              if (!confirm("この投票を削除しますか？すべてのアイデアと投票データが失われます。")) return
               setIsDeleting(true)
               const result = await deleteSession(session.id)
               if (!result?.error) {

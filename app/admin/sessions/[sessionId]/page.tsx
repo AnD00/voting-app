@@ -47,7 +47,7 @@ export default async function AdminSessionDetailPage({
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
         >
           <ArrowLeft className="h-4 w-4" />
-          投票会一覧に戻る
+          投票一覧に戻る
         </Link>
 
         <SessionControls session={session} totalVotes={totalVotes ?? 0} />

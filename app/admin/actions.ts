@@ -77,6 +77,7 @@ export async function createIdea(formData: FormData) {
 
   const sessionId = formData.get("sessionId") as string
   const title = formData.get("title") as string
+  const description = formData.get("description") as string
   const url = formData.get("url") as string
 
   if (!title.trim()) {
@@ -87,6 +88,7 @@ export async function createIdea(formData: FormData) {
   const { error } = await supabase.from("ideas").insert({
     session_id: sessionId,
     title: title.trim(),
+    description: description?.trim() || null,
     url: url?.trim() || null,
   })
 
