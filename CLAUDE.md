@@ -1,44 +1,59 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## プロジェクト概要
 
-## Project Overview
+チーム向けアイデア投票アプリ。Next.js 16 App Router + Supabase。**UIテキストはすべて日本語**で記述すること。
 
-Team idea voting app (アイデア投票) built with Next.js 16 App Router. All UI text is in Japanese. The app lets teams create voting sessions, add ideas, and vote anonymously.
-
-## Commands
+## コマンド
 
 ```bash
-pnpm dev          # Start dev server (http://localhost:3000)
-pnpm build        # Production build (note: ignoreBuildErrors is true in next.config.mjs)
-pnpm start        # Start production server
-pnpm lint         # Run ESLint
+pnpm dev          # 開発サーバー起動 (http://localhost:3000)
+pnpm build        # 本番ビルド (ignoreBuildErrors: true)
+pnpm lint         # ESLint 実行
 ```
 
-No test framework is configured.
+テストフレームワークは未導入。変更後は `pnpm build` と `pnpm lint` で検証すること。
 
-## Environment Variables
+## 環境変数
 
-- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
-- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side only)
-- `ADMIN_PASSWORD` — Password for admin login
+- `NEXT_PUBLIC_SUPABASE_URL` — Supabase プロジェクトURL
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase サービスロールキー（サーバーサイドのみ）
+- `ADMIN_PASSWORD` — 管理者ログインパスワード
 
-## Architecture
+## アーキテクチャ
 
-**Framework:** Next.js 16 App Router with React 19, TypeScript, Tailwind CSS 4
+- **技術スタック:** Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui (new-york スタイル)
+- **データベース:** Supabase (PostgreSQL)。スキーマ: `scripts/001_create_sessions.sql`, `002_create_ideas.sql`, `003_create_votes.sql`
+- **Supabase クライアント:** `lib/supabase/server.ts` — サービスロールキー使用、自動トークン更新/セッション永続化なし
 
-**Database:** Supabase (PostgreSQL). Schema in `scripts/001_create_tables.sql`. Tables: `sessions`, `ideas`, `votes`. Supabase client initialized in `lib/supabase/server.ts` using service role key.
+### 主要ルート
 
-**UI:** shadcn/ui components in `components/ui/` (59 Radix-based components configured via `components.json`). Styling uses oklch CSS variables defined in `app/globals.css`.
+- `/` — セッション一覧（Public）
+- `/admin` — パスワードログイン → `/admin/sessions/[sessionId]` でCRUD
+- `/vote/[sessionId]` — ニックネーム → 投票 → 確認の3ステップ（Public）
+- `/results/[sessionId]` — 結果表示、セッションclose時のみ（Public）
 
-**Key routes:**
-- `/` — Public session listing
-- `/admin` — Password login, then session/idea CRUD at `/admin/sessions/[sessionId]`
-- `/vote/[sessionId]` — Multi-step anonymous voting flow (nickname → selection → confirmation)
-- `/results/[sessionId]` — Animated results display with confetti
+### APIルート
 
-**Server Actions:** `app/admin/actions.ts` (session/idea CRUD with `assertAdmin()` auth check) and `app/vote/actions.ts` (vote submission). Actions use `revalidatePath()` for cache invalidation.
+- `POST /api/admin/login` — パスワード認証、httpOnly cookie発行
+- `POST /api/upload` — 画像アップロード（jpeg/png/gif/webp、最大5MB、Supabase Storage `idea-images` バケット）
 
-**Auth:** Admin uses password cookie (`admin_session`, httpOnly). Voters are anonymous, tracked by UUID in localStorage with duplicate vote prevention via unique constraint on `(session_id, voter_id)`.
+### Server Actions
 
-**State:** No external state library. Client components use React useState/localStorage. No real-time subscriptions.
+- `app/admin/actions.ts` — セッション/アイデアCRUD（`assertAdmin()` で認証チェック）
+- `app/vote/actions.ts` — 投票送信（`(session_id, voter_id)` のユニーク制約で重複防止）
+
+### 認証
+
+- 管理者: パスワード → httpOnly cookie `admin_session`（24時間有効）
+- 投票者: 匿名。`voter_id` は localStorage の UUID
+
+## コードスタイル
+
+- ES modules (`import/export`) を使用、CommonJS は使わない
+- パス別名 `@/*` を使用（`@/components/ui/button` など）
+- Server Components をデフォルトとし、`"use client"` は必要な場合のみ
+- フォーム送信は Server Actions + `useActionState` パターン
+- キャッシュ無効化は `revalidatePath()` を使用
+- UIコンポーネントは `components/ui/` の既存 shadcn/ui を優先利用
+- スタイリング: Tailwind CSS 4 + oklch CSS変数（`app/globals.css` で定義）
