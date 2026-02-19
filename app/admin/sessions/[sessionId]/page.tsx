@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { AdminHeader } from "../../admin-header"
 import { SessionControls } from "./session-controls"
 import { IdeaManager } from "./idea-manager"
+import { VoterList } from "./voter-list"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
@@ -38,6 +39,12 @@ export default async function AdminSessionDetailPage({
     .select("*", { count: "exact", head: true })
     .eq("session_id", sessionId)
 
+  const { data: votes } = await supabase
+    .from("votes")
+    .select("id, voter_nickname, voter_id, created_at, ideas(title)")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true })
+
   return (
     <div className="min-h-dvh bg-muted/50">
       <AdminHeader />
@@ -57,6 +64,8 @@ export default async function AdminSessionDetailPage({
           ideas={ideas ?? []}
           isClosed={session.is_closed}
         />
+
+        <VoterList votes={(votes as any) ?? []} />
       </main>
     </div>
   )
