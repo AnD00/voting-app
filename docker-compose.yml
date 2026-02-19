@@ -1,0 +1,165 @@
+# ローカル開発用 Docker Compose
+# 使い方: make up / make down / make reset
+#
+# JWT キーは supabase start と同じローカル開発用の固定値。本番では絶対に使わないこと。
+
+x-supabase-secrets:
+  jwt-secret: &jwt-secret super-secret-jwt-token-with-at-least-32-characters-long
+  anon-key: &anon-key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+  service-role-key: &service-role-key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+
+services:
+  # ─── PostgreSQL ──────────────────────────────────────────
+  db:
+    image: supabase/postgres:15.8.1.085
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      JWT_SECRET: *jwt-secret
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # init-scripts/ にマウント（イメージ内蔵スクリプトと共存、99- で最後に実行）
+      - ./scripts/000_init_roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-000_init_roles.sql:ro
+      - ./scripts/001_create_sessions.sql:/docker-entrypoint-initdb.d/init-scripts/99-001_create_sessions.sql:ro
+      - ./scripts/002_create_ideas.sql:/docker-entrypoint-initdb.d/init-scripts/99-002_create_ideas.sql:ro
+      - ./scripts/003_create_votes.sql:/docker-entrypoint-initdb.d/init-scripts/99-003_create_votes.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ─── PostgREST ───────────────────────────────────────────
+  rest:
+    image: postgrest/postgrest:v12.2.3
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:postgres@db:5432/postgres
+      PGRST_DB_SCHEMAS: public,storage,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: *jwt-secret
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: *jwt-secret
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+
+  # ─── Storage API ─────────────────────────────────────────
+  storage:
+    image: supabase/storage-api:v1.14.3
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+    environment:
+      ANON_KEY: *anon-key
+      SERVICE_KEY: *service-role-key
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: *jwt-secret
+      DATABASE_URL: postgres://supabase_storage_admin:postgres@db:5432/postgres
+      FILE_SIZE_LIMIT: 5242880
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      GLOBAL_S3_BUCKET: stub
+      ENABLE_IMAGE_TRANSFORMATION: "false"
+      IS_MULTITENANT: "false"
+    volumes:
+      - storage-data:/var/lib/storage
+
+  # ─── Kong API Gateway ─────────────────────────────────────
+  kong:
+    image: kong:2.8.1
+    restart: unless-stopped
+    ports:
+      - "54321:8000"
+    depends_on:
+      rest:
+        condition: service_started
+      storage:
+        condition: service_started
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+      SUPABASE_ANON_KEY: *anon-key
+      SUPABASE_SERVICE_KEY: *service-role-key
+    volumes:
+      - ./kong.yml:/home/kong/kong.yml:ro
+
+  # ─── Postgres Meta (Studio用) ────────────────────────────
+  meta:
+    image: supabase/postgres-meta:v0.84.2
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: supabase_admin
+      PG_META_DB_PASSWORD: postgres
+
+  # ─── Studio (DB管理UI) ──────────────────────────────────
+  studio:
+    image: supabase/studio:2026.02.16-sha-26c615c
+    restart: unless-stopped
+    ports:
+      - "54323:3000"
+    depends_on:
+      kong:
+        condition: service_started
+      meta:
+        condition: service_started
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: postgres
+      DEFAULT_ORGANIZATION_NAME: Local Dev
+      DEFAULT_PROJECT_NAME: voting-app
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: http://localhost:54321
+      SUPABASE_ANON_KEY: *anon-key
+      SUPABASE_SERVICE_KEY: *service-role-key
+      AUTH_JWT_SECRET: *jwt-secret
+      NEXT_PUBLIC_ENABLE_LOGS: "false"
+      NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
+
+  # ─── Next.js アプリ ─────────────────────────────────────
+  # ブラウザ側は localhost:54321、サーバー側は Kong コンテナに直接アクセス
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      kong:
+        condition: service_started
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_SERVICE_ROLE_KEY: *service-role-key
+      ADMIN_PASSWORD: admin
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  storage-data:

@@ -23,57 +23,68 @@
 
 ## セットアップ
 
-### 前提条件
+### ローカル開発（Docker Compose）
 
-- Node.js 18 以上
-- pnpm
-- Supabase プロジェクト
-
-### 1. リポジトリのクローンと依存関係のインストール
+Docker と Docker Compose があれば、すべてローカルで動作します。
 
 ```bash
 git clone https://github.com/AnD00/voting-app.git
 cd voting-app
-pnpm install
+make up
 ```
 
-### 2. 環境変数の設定
+起動後のアクセス先：
 
-`.env.local` を作成し、以下を設定します。
+| サービス | URL |
+| --- | --- |
+| アプリ | <http://localhost:3000> |
+| Supabase API | <http://localhost:54321> |
+| Supabase Studio | <http://localhost:54323> |
+
+管理者パスワードは `admin` です。
 
 ```bash
+make down    # 停止
+make reset   # DB リセット（ボリューム削除 → 再起動）
+make logs    # ログ表示
+make clean   # 全クリーンアップ（ボリューム + イメージ削除）
+```
+
+### 本番環境（Supabase Cloud + Vercel）
+
+#### 1. Supabase プロジェクトの準備
+
+Supabase ダッシュボードの SQL Editor で以下のスクリプトを順番に実行します。
+
+```
+scripts/001_create_sessions.sql
+scripts/002_create_ideas.sql
+scripts/003_create_votes.sql
+scripts/004_create_storage_bucket.sql
+```
+
+また、Supabase Storage の `idea-images` バケットでパブリックアクセスを有効にしてください。
+
+#### 2. 環境変数の設定
+
+Vercel（またはホスティング先）に以下の環境変数を設定します。
+
+```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ADMIN_PASSWORD=your-admin-password
 ```
 
-### 3. データベースのセットアップ
-
-Supabase の SQL Editor で以下のスクリプトを順番に実行します。
-
-```bash
-scripts/001_create_sessions.sql
-scripts/002_create_ideas.sql
-scripts/003_create_votes.sql
-```
-
-また、Supabase Storage に `idea-images` バケットを作成し、パブリックアクセスを有効にしてください。
-
-### 4. 開発サーバーの起動
-
-```bash
-pnpm dev
-```
-
-http://localhost:3000 でアクセスできます。
-
 ## コマンド一覧
 
 | コマンド | 説明 |
 | --- | --- |
-| `pnpm dev` | 開発サーバーを起動 |
+| `make up` | Docker Compose でローカル開発環境を起動 |
+| `make down` | ローカル開発環境を停止 |
+| `make reset` | DB をリセットして再起動 |
+| `make logs` | 全サービスのログを表示 |
+| `pnpm dev` | Next.js 開発サーバーを起動（ホスト直接実行時） |
 | `pnpm build` | プロダクションビルド |
-| `pnpm start` | プロダクションサーバーを起動 |
 | `pnpm lint` | ESLint を実行 |
 
 ## アプリケーション構成
@@ -95,6 +106,19 @@ app/
 └── api/
     ├── admin/login/route.ts        # 管理者認証 API
     └── upload/route.ts             # 画像アップロード API
+```
+
+## Docker Compose サービス構成
+
+```text
+docker compose up
+  ├── db       (supabase/postgres)      — PostgreSQL :5432
+  ├── rest     (postgrest)              — REST API (内部)
+  ├── storage  (supabase/storage-api)   — Storage API (内部)
+  ├── kong     (kong)                   — API Gateway :54321
+  ├── meta     (supabase/postgres-meta) — DB メタデータ (内部)
+  ├── studio   (supabase/studio)        — 管理 UI :54323
+  └── app      (Node.js / Next.js)      — アプリケーション :3000
 ```
 
 ## 利用フロー

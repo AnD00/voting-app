@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { LinkifyText } from "@/components/linkify-text"
 import { Plus, Trash2, ExternalLink, Vote, ImagePlus, X, Pencil, Check } from "lucide-react"
 
 interface Idea {
@@ -31,6 +32,9 @@ export function IdeaManager({
 }) {
   const formRef = useRef<HTMLFormElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [ideaTitle, setIdeaTitle] = useState("")
+  const [ideaDescription, setIdeaDescription] = useState("")
+  const [ideaUrl, setIdeaUrl] = useState("")
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -59,10 +63,13 @@ export function IdeaManager({
       formData.set("imageUrl", imageUrl)
       const result = await createIdea(formData)
       if (result?.success) {
-        formRef.current?.reset()
+        setIdeaTitle("")
+        setIdeaDescription("")
+        setIdeaUrl("")
         setImageFile(null)
         setImagePreview(null)
         if (fileInputRef.current) fileInputRef.current.value = ""
+        formRef.current?.reset()
       }
       return result ?? null
     },
@@ -110,6 +117,8 @@ export function IdeaManager({
                 name="title"
                 placeholder="アイデアのタイトル"
                 required
+                value={ideaTitle}
+                onChange={(e) => setIdeaTitle(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -119,6 +128,8 @@ export function IdeaManager({
                 name="description"
                 placeholder="アイデアの簡単な説明"
                 rows={2}
+                value={ideaDescription}
+                onChange={(e) => setIdeaDescription(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -128,6 +139,8 @@ export function IdeaManager({
                 name="url"
                 type="url"
                 placeholder="https://..."
+                value={ideaUrl}
+                onChange={(e) => setIdeaUrl(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -295,7 +308,7 @@ function IdeaRow({
 
   if (isEditing) {
     return (
-      <div className="flex flex-col gap-3 p-3 bg-muted/50 rounded-lg border-2 border-primary/20">
+      <div className="flex flex-col gap-3 p-3 bg-muted/50 rounded-lg border-2 border-primary/20 overflow-hidden">
         <div className="flex flex-col gap-2">
           <Label className="text-xs">タイトル</Label>
           <Input
@@ -385,9 +398,9 @@ function IdeaRow({
         />
       )}
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-foreground truncate">{idea.title}</p>
+        <p className="font-medium text-foreground break-words">{idea.title}</p>
         {idea.description && (
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{idea.description}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 whitespace-pre-wrap break-words"><LinkifyText>{idea.description}</LinkifyText></p>
         )}
         {idea.url && (
           <a

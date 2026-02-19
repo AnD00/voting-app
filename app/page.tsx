@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Vote, Lightbulb, ArrowRight, Sparkles } from "lucide-react"
+import { LinkifyText } from "@/components/linkify-text"
 
 export default async function HomePage() {
   const supabase = createClient()
@@ -50,7 +51,7 @@ export default async function HomePage() {
                           <Badge className="shrink-0 bg-primary text-primary-foreground">投票中</Badge>
                         </div>
                         {session.description && (
-                          <p className="text-sm text-muted-foreground truncate">{session.description}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2 whitespace-pre-wrap break-words"><LinkifyText>{session.description}</LinkifyText></p>
                         )}
                         <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">

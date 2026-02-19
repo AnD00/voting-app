@@ -1,0 +1,83 @@
+_format_version: "1.1"
+
+consumers:
+  - username: anon
+    keyauth_credentials:
+      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+    acls:
+      - group: anon
+  - username: service_role
+    keyauth_credentials:
+      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+    acls:
+      - group: admin
+
+services:
+  # ─── PostgREST ─────────────────────────────────
+  - name: rest-v1
+    url: http://rest:3000/
+    routes:
+      - name: rest-v1-all
+        strip_path: true
+        paths:
+          - /rest/v1/
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: true
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - anon
+            - admin
+
+  # ─── Storage API（認証あり）───────────────────
+  - name: storage-v1
+    url: http://storage:5000/
+    routes:
+      - name: storage-v1-all
+        strip_path: true
+        paths:
+          - /storage/v1/
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: true
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - anon
+            - admin
+
+  # ─── Storage 公開オブジェクト（認証なし）──────
+  - name: storage-v1-public
+    url: http://storage:5000/object/public/
+    routes:
+      - name: storage-v1-public-all
+        strip_path: true
+        paths:
+          - /storage/v1/object/public/
+    plugins:
+      - name: cors
+
+  # ─── Postgres Meta (Studio用) ──────────────────
+  - name: meta
+    url: http://meta:8080/
+    routes:
+      - name: meta-all
+        strip_path: true
+        paths:
+          - /pg/
+    plugins:
+      - name: key-auth
+        config:
+          hide_credentials: true
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - admin

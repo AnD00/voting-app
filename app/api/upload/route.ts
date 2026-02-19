@@ -33,6 +33,13 @@ export async function POST(request: NextRequest) {
   const fileName = `${sessionId}/${crypto.randomUUID()}.${ext}`
 
   const supabase = createClient()
+
+  // バケットが存在しなければ作成
+  const { data: buckets } = await supabase.storage.listBuckets()
+  if (!buckets?.find((b) => b.id === "idea-images")) {
+    await supabase.storage.createBucket("idea-images", { public: true })
+  }
+
   const { error } = await supabase.storage
     .from("idea-images")
     .upload(fileName, file, {
@@ -44,9 +51,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "アップロードに失敗しました: " + error.message }, { status: 500 })
   }
 
-  const { data: urlData } = supabase.storage
-    .from("idea-images")
-    .getPublicUrl(fileName)
+  // ブラウザからアクセス可能な公開URLを生成（サーバー内部URLではなく NEXT_PUBLIC を使用）
+  const publicBase = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const publicUrl = `${publicBase}/storage/v1/object/public/idea-images/${fileName}`
 
-  return NextResponse.json({ url: urlData.publicUrl })
+  return NextResponse.json({ url: publicUrl })
 }

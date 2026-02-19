@@ -5,6 +5,7 @@ import confetti from "canvas-confetti"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Trophy, Users, ChevronDown, ChevronUp, ExternalLink, Crown } from "lucide-react"
+import { LinkifyText } from "@/components/linkify-text"
 
 interface Session {
   id: string
@@ -143,7 +144,7 @@ export function ResultsView({
                         {winner.title}
                       </h2>
                       {winner.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{winner.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap break-words"><LinkifyText>{winner.description}</LinkifyText></p>
                       )}
                       {winner.image_url && (
                         <img
@@ -215,11 +216,11 @@ export function ResultsView({
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground text-sm truncate">
+                        <p className="font-medium text-foreground text-sm break-words">
                           {idea.title}
                         </p>
                         {idea.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-1">{idea.description}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1 whitespace-pre-wrap break-words"><LinkifyText>{idea.description}</LinkifyText></p>
                         )}
                         {idea.url && (
                           <a

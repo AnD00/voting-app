@@ -36,7 +36,8 @@ export async function submitVote(
   sessionId: string,
   ideaId: string,
   nickname: string,
-  voterId: string
+  voterId: string,
+  comment?: string
 ) {
   const supabase = createClient()
 
@@ -64,11 +65,13 @@ export async function submitVote(
   }
 
   // Insert vote
+  const trimmedComment = comment?.trim() || null
   const { error } = await supabase.from("votes").insert({
     session_id: sessionId,
     idea_id: ideaId,
     voter_nickname: nickname.trim(),
     voter_id: voterId,
+    ...(trimmedComment && { comment: trimmedComment }),
   })
 
   if (error) {

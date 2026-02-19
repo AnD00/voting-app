@@ -9,3 +9,5 @@ CREATE TABLE public.ideas (
   CONSTRAINT ideas_pkey PRIMARY KEY (id),
   CONSTRAINT ideas_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.sessions(id)
 );
+
+ALTER TABLE public.ideas ENABLE ROW LEVEL SECURITY;

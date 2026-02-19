@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { LogOut, Settings } from "lucide-react"
 import Link from "next/link"
+import { logout } from "./actions"
 
 export function AdminHeader() {
   return (
@@ -12,18 +13,17 @@ export function AdminHeader() {
           <Settings className="h-5 w-5 text-primary" />
           <span className="font-bold text-foreground">管理画面</span>
         </Link>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-          onClick={() => {
-            document.cookie = "admin_session=; path=/; max-age=0"
-            window.location.href = "/admin"
-          }}
-        >
-          <LogOut className="h-4 w-4 mr-1" />
-          ログアウト
-        </Button>
+        <form action={logout}>
+          <Button
+            type="submit"
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+          >
+            <LogOut className="h-4 w-4 mr-1" />
+            ログアウト
+          </Button>
+        </form>
       </div>
     </header>
   )

@@ -6,3 +6,5 @@ CREATE TABLE public.sessions (
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT sessions_pkey PRIMARY KEY (id)
 );
+
+ALTER TABLE public.sessions ENABLE ROW LEVEL SECURITY;

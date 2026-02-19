@@ -2,11 +2,13 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { toggleSessionClosed, deleteSession } from "../../actions"
+import { toggleSessionClosed, deleteSession, updateSession } from "../../actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Vote, Lock, Unlock, Trash2, ExternalLink, Copy, Check } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Vote, Lock, Unlock, Trash2, ExternalLink, Copy, Check, Pencil, X } from "lucide-react"
 
 interface Session {
   id: string
@@ -27,6 +29,10 @@ export function SessionControls({
   const [isToggling, setIsToggling] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [editTitle, setEditTitle] = useState(session.title)
+  const [editDescription, setEditDescription] = useState(session.description || "")
 
   const votePath = `/vote/${session.id}`
 
@@ -39,18 +45,76 @@ export function SessionControls({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-xl">{session.title}</CardTitle>
-            {session.description && (
-              <p className="text-sm text-muted-foreground mt-1">{session.description}</p>
-            )}
+      <CardHeader className="overflow-hidden">
+        {isEditing ? (
+          <div className="flex flex-col gap-3 overflow-hidden">
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="タイトル"
+            />
+            <Textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="説明（任意）"
+              rows={3}
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                disabled={isSaving}
+                onClick={async () => {
+                  setIsSaving(true)
+                  const result = await updateSession(session.id, {
+                    title: editTitle,
+                    description: editDescription,
+                  })
+                  setIsSaving(false)
+                  if (!result?.error) {
+                    setIsEditing(false)
+                    router.refresh()
+                  }
+                }}
+              >
+                {isSaving ? "保存中..." : "保存"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEditTitle(session.title)
+                  setEditDescription(session.description || "")
+                  setIsEditing(false)
+                }}
+              >
+                <X className="h-4 w-4 mr-1" />
+                キャンセル
+              </Button>
+            </div>
           </div>
-          <Badge variant={session.is_closed ? "secondary" : "default"} className="shrink-0">
-            {session.is_closed ? "締切済" : "投票中"}
-          </Badge>
-        </div>
+        ) : (
+          <div className="flex items-start justify-between gap-3 overflow-hidden">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start gap-2 min-w-0">
+                <CardTitle className="text-xl break-words min-w-0">{session.title}</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              {session.description && (
+                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap break-words">{session.description}</p>
+              )}
+            </div>
+            <Badge variant={session.is_closed ? "secondary" : "default"} className="shrink-0">
+              {session.is_closed ? "締切済" : "投票中"}
+            </Badge>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -61,7 +125,7 @@ export function SessionControls({
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-foreground">投票URL:</p>
           <div className="flex items-center gap-2">
-            <code suppressHydrationWarning className="flex-1 text-xs bg-muted px-3 py-2 rounded-md truncate text-muted-foreground">
+            <code suppressHydrationWarning className="flex-1 text-xs bg-muted px-3 py-2 rounded-md break-all text-muted-foreground">
               {votePath}
             </code>
             <Button variant="outline" size="sm" onClick={handleCopy}>

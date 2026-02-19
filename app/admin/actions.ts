@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 
 async function assertAdmin() {
   const cookieStore = await cookies()
@@ -10,6 +11,12 @@ async function assertAdmin() {
   if (!isAdmin) {
     throw new Error("Unauthorized")
   }
+}
+
+export async function logout() {
+  const cookieStore = await cookies()
+  cookieStore.delete("admin_session")
+  redirect("/admin")
 }
 
 export async function createSession(formData: FormData) {
@@ -33,6 +40,36 @@ export async function createSession(formData: FormData) {
   }
 
   revalidatePath("/admin/sessions")
+  revalidatePath("/")
+  return { success: true }
+}
+
+export async function updateSession(
+  sessionId: string,
+  data: { title: string; description: string }
+) {
+  await assertAdmin()
+
+  if (!data.title.trim()) {
+    return { error: "タイトルを入力してください" }
+  }
+
+  const supabase = createClient()
+  const { error } = await supabase
+    .from("sessions")
+    .update({
+      title: data.title.trim(),
+      description: data.description?.trim() || null,
+    })
+    .eq("id", sessionId)
+
+  if (error) {
+    return { error: "更新に失敗しました: " + error.message }
+  }
+
+  revalidatePath(`/admin/sessions/${sessionId}`)
+  revalidatePath(`/vote/${sessionId}`)
+  revalidatePath(`/results/${sessionId}`)
   revalidatePath("/")
   return { success: true }
 }

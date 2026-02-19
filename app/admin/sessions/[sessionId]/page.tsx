@@ -41,7 +41,7 @@ export default async function AdminSessionDetailPage({
 
   const { data: votes } = await supabase
     .from("votes")
-    .select("id, voter_nickname, voter_id, created_at, ideas(title)")
+    .select("id, voter_nickname, voter_id, comment, created_at, ideas(title)")
     .eq("session_id", sessionId)
     .order("created_at", { ascending: true })
 
